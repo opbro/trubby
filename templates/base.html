@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>{% block title %}Trubby{% endblock %}</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', path='trubby-icon.png') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', path='trubby-icon.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', path='app.css') }}">
+  <script defer src="{{ url_for('static', path='vendor/htmx.min.js') }}"></script>
+  <script defer src="{{ url_for('static', path='vendor/sortable.min.js') }}"></script>
+  <script defer src="{{ url_for('static', path='app.js') }}"></script>
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  {% if current_user %}
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="Trubby board">
+        <img class="brand-icon" src="{{ url_for('static', path='trubby-icon.png') }}" alt="">
+        <span>
+          <strong>Trubby</strong>
+          <small>Tracking for people who don’t want to track.</small>
+        </span>
+      </a>
+      <nav class="site-nav" aria-label="Account">
+        <a href="/">Board</a>
+        <a href="/archive">Archive</a>
+        <span class="signed-in">{{ current_user["name"] }}</span>
+        <form method="post" action="/logout">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="button button-quiet" type="submit">Log out</button>
+        </form>
+      </nav>
+    </header>
+  {% endif %}
+
+  {% block content %}{% endblock %}
+
+  {% if current_user %}
+    <div
+      id="image-lightbox"
+      class="image-lightbox"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="lightbox-filename"
+      hidden
+    >
+      <div class="lightbox-backdrop" data-lightbox-close aria-hidden="true"></div>
+      <section class="lightbox-panel">
+        <header class="lightbox-header">
+          <div>
+            <strong id="lightbox-filename">Image preview</strong>
+            <span id="lightbox-count"></span>
+          </div>
+          <div class="lightbox-actions">
+            <a id="lightbox-download" class="button button-secondary" href="#">Download</a>
+            <button class="icon-button lightbox-close" type="button" data-lightbox-close aria-label="Close image preview">×</button>
+          </div>
+        </header>
+        <div class="lightbox-stage">
+          <button class="lightbox-nav lightbox-previous" type="button" data-lightbox-previous aria-label="Previous image">‹</button>
+          <img id="lightbox-image" src="" alt="">
+          <button class="lightbox-nav lightbox-next" type="button" data-lightbox-next aria-label="Next image">›</button>
+        </div>
+      </section>
+    </div>
+    <div id="app-announcer" class="sr-only" aria-live="polite"></div>
+  {% endif %}
+</body>
+</html>

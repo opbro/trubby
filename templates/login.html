@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Log in · Trubby{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+{% block content %}
+<main class="auth-shell">
+  <section class="auth-card">
+    <a class="brand auth-brand" href="/login">
+      <img class="brand-icon" src="{{ url_for('static', path='trubby-icon.png') }}" alt="">
+      <span><strong>Trubby</strong><small>Tracking for people who don’t want to track.</small></span>
+    </a>
+    <div>
+      <p class="eyebrow">Welcome back</p>
+      <h1>What needs untangling?</h1>
+      <p class="muted">Log in and get it out of the group chat.</p>
+    </div>
+    {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
+    <form class="stacked-form" method="post" action="/login">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label>
+        Your name
+        <input name="name" value="{{ entered_name or '' }}" autocomplete="username" autofocus required>
+      </label>
+      <label>
+        Password
+        <input type="password" name="password" autocomplete="current-password" required>
+      </label>
+      <button class="button button-primary button-wide" type="submit">Log in</button>
+    </form>
+    <p class="auth-switch">New here? <a href="/register">Make an account</a></p>
+  </section>
+</main>
+{% endblock %}

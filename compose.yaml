@@ -1,0 +1,16 @@
+services:
+  trubby:
+    build: .
+    ports:
+      - "${PORT:-8000}:8000"
+    environment:
+      TRUBBY_DATA_DIR: /data
+      TRUBBY_HOST: 0.0.0.0
+      PORT: 8000
+    volumes:
+      - trubby-data:/data
+    restart: unless-stopped
+
+volumes:
+  trubby-data:
+

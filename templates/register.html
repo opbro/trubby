@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Join · Trubby{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+{% block content %}
+<main class="auth-shell">
+  <section class="auth-card">
+    <a class="brand auth-brand" href="/register">
+      <img class="brand-icon" src="{{ url_for('static', path='trubby-icon.png') }}" alt="">
+      <span><strong>Trubby</strong><small>Tracking for people who don’t want to track.</small></span>
+    </a>
+    <div>
+      <p class="eyebrow">Keep it simple</p>
+      <h1>Join the board.</h1>
+      <p class="muted">Just a name and password. No profile homework.</p>
+    </div>
+    {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
+    <form class="stacked-form" method="post" action="/register">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label>
+        Your name
+        <input name="name" value="{{ entered_name or '' }}" minlength="2" maxlength="40" autocomplete="username" autofocus required>
+      </label>
+      <label>
+        Password
+        <input type="password" name="password" minlength="8" autocomplete="new-password" required>
+        <small>At least 8 characters.</small>
+      </label>
+      <button class="button button-primary button-wide" type="submit">Join Trubby</button>
+    </form>
+    <p class="auth-switch">Already joined? <a href="/login">Log in</a></p>
+  </section>
+</main>
+{% endblock %}

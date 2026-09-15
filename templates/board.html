@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Board · Trubby{% endblock %}
+{% block body_class %}board-page{% endblock %}
+{% block content %}
+<main class="board-shell">
+  <div class="board-heading">
+    <div>
+      <p class="eyebrow">The one shared board</p>
+      <h1>What’s going on?</h1>
+    </div>
+    <form
+      class="quick-add"
+      hx-post="/cards"
+      hx-target="#board-columns"
+      hx-swap="outerHTML"
+      method="post"
+      action="/cards"
+    >
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label class="sr-only" for="new-card-title">New card title</label>
+      <input id="new-card-title" name="title" maxlength="120" placeholder="Add a thing…" required>
+      <button class="button button-primary" type="submit">Add card</button>
+      <div id="new-card-error" class="quick-add-error"></div>
+    </form>
+  </div>
+
+  {% include "partials/board_columns.html" %}
+</main>
+
+<div id="card-drawer-container">
+  {% if detail %}{% include "partials/card_drawer.html" %}{% endif %}
+</div>
+{% endblock %}
+

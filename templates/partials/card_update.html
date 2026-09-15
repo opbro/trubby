@@ -1,0 +1,21 @@
+{% include "partials/card_drawer.html" %}
+<div id="board-columns" class="board-columns" data-csrf="{{ csrf_token }}" hx-swap-oob="outerHTML">
+  {% for status in ("todo", "doing", "done") %}
+    <section class="board-column board-column-{{ status }}" aria-labelledby="heading-{{ status }}">
+      <header class="column-header">
+        <div><span class="status-dot" aria-hidden="true"></span><h2 id="heading-{{ status }}">{{ status_labels[status] }}</h2></div>
+        <span class="card-count">{{ cards[status]|length }}</span>
+      </header>
+      <div class="card-list" data-status="{{ status }}">
+        {% for card in cards[status] %}
+          {% include "partials/card_tile.html" %}
+        {% else %}
+          <div class="column-empty">
+            {% if status == "todo" %}Nothing waiting. Nice.{% elif status == "doing" %}Drag something here when it’s moving.{% else %}Finished things land here.{% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endfor %}
+</div>
+

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Archive · Trubby{% endblock %}
+{% block content %}
+<main class="archive-shell">
+  <div class="archive-heading">
+    <div>
+      <p class="eyebrow">Out of sight, not gone</p>
+      <h1>Archive</h1>
+      <p class="muted">Finished history without the board clutter.</p>
+    </div>
+    <a class="button button-secondary" href="/">Back to board</a>
+  </div>
+
+  <div class="archive-list">
+    {% for card in cards %}
+      <article class="archive-card">
+        <a href="/cards/{{ card['id'] }}">
+          <span class="status-pill status-{{ card['status'] }}">{{ status_labels[card["status"]] }}</span>
+          <h2>{{ card["title"] }}</h2>
+          {% if card["description"] %}<p>{{ card["description"]|truncate(180) }}</p>{% endif %}
+          <small>Started by {{ card["creator_name"] }} · archived {{ card["archived_at"][:10] }}</small>
+        </a>
+        <form method="post" action="/cards/{{ card['id'] }}/restore">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="button button-secondary" type="submit">Restore to To do</button>
+        </form>
+      </article>
+    {% else %}
+      <div class="archive-empty">
+        <span>◎</span>
+        <h2>Nothing archived yet.</h2>
+        <p>Cards you tuck away will wait here.</p>
+      </div>
+    {% endfor %}
+  </div>
+</main>
+{% endblock %}
+

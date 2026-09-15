@@ -1,0 +1,189 @@
+<div class="drawer-backdrop" data-drawer-close aria-hidden="true"></div>
+<aside
+  id="card-drawer"
+  class="card-drawer"
+  data-card-id="{{ detail.card['id'] }}"
+  aria-labelledby="card-title-{{ detail.card['id'] }}"
+  tabindex="-1"
+>
+  <header class="drawer-header">
+    <span class="status-pill status-{{ detail.card['status'] }}">
+      {{ "Archived" if detail.card["archived_at"] else status_labels[detail.card["status"]] }}
+    </span>
+    <a
+      class="icon-button drawer-close"
+      href="/"
+      aria-label="Close card"
+      hx-get="/drawer/close"
+      hx-target="#card-drawer-container"
+      hx-swap="outerHTML"
+      hx-push-url="/"
+    >×</a>
+  </header>
+
+  <div class="drawer-scroll">
+    <section class="card-summary">
+      <p class="eyebrow">Card #{{ detail.card["id"] }}</p>
+      <h1 id="card-title-{{ detail.card['id'] }}">{{ detail.card["title"] }}</h1>
+      {% if detail.card["description"] %}
+        <p class="card-description">{{ detail.card["description"] }}</p>
+      {% else %}
+        <p class="card-description empty-description">No extra explanation. Honestly refreshing.</p>
+      {% endif %}
+      <p class="created-by">Started by {{ detail.card["creator_name"] }}</p>
+    </section>
+
+    {% if not detail.card["archived_at"] %}
+      <details class="edit-card">
+        <summary>Edit the basics</summary>
+        <form
+          class="stacked-form compact-form"
+          method="post"
+          action="/cards/{{ detail.card['id'] }}/edit"
+          hx-post="/cards/{{ detail.card['id'] }}/edit"
+          hx-target="#card-drawer-container"
+          hx-swap="innerHTML"
+        >
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label>
+            Title
+            <input name="title" value="{{ detail.card['title'] }}" maxlength="120" required>
+          </label>
+          <label>
+            A little context <span class="optional">(optional)</span>
+            <textarea name="description" rows="4" maxlength="5000">{{ detail.card["description"] }}</textarea>
+          </label>
+          <div id="card-edit-error"></div>
+          <button class="button button-secondary" type="submit">Save</button>
+        </form>
+      </details>
+
+      <form
+        class="drawer-move"
+        method="post"
+        action="/cards/{{ detail.card['id'] }}/move"
+        hx-post="/cards/{{ detail.card['id'] }}/move"
+        hx-target="#card-drawer-container"
+        hx-swap="innerHTML"
+      >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="view" value="drawer">
+        <label>
+          Where is it?
+          <select name="status" onchange="this.form.requestSubmit()">
+            {% for status in ("todo", "doing", "done") %}
+              <option value="{{ status }}" {% if status == detail.card["status"] %}selected{% endif %}>{{ status_labels[status] }}</option>
+            {% endfor %}
+          </select>
+        </label>
+      </form>
+    {% endif %}
+
+    <section class="thread" aria-labelledby="thread-heading">
+      <div class="section-heading">
+        <h2 id="thread-heading">Notes &amp; stuff</h2>
+        <span>{{ detail.entries|length }}</span>
+      </div>
+
+      <div class="thread-entries">
+        {% for entry in detail.entries %}
+          <article class="thread-entry">
+            <header>
+              <span class="avatar" aria-hidden="true">{{ entry["author_name"][0]|upper }}</span>
+              <strong>{{ entry["author_name"] }}</strong>
+              <time datetime="{{ entry['created_at'] }}">{{ entry["created_at"][:10] }}</time>
+            </header>
+            {% if entry["body"] %}<p class="entry-body">{{ entry["body"] }}</p>{% endif %}
+            {% set attachments = detail.attachments_by_entry.get(entry["id"], []) %}
+            {% if attachments %}
+              <div class="attachments">
+                {% for attachment in attachments %}
+                  <div class="attachment">
+                    {% if attachment["content_type"] in safe_image_types %}
+                      <a
+                        class="image-preview"
+                        href="/attachments/{{ attachment['id'] }}"
+                        title="Preview {{ attachment['original_name'] }}"
+                        data-lightbox
+                        data-preview-src="/attachments/{{ attachment['id'] }}?preview=true"
+                        data-download-src="/attachments/{{ attachment['id'] }}"
+                        data-filename="{{ attachment['original_name'] }}"
+                      >
+                        <img src="/attachments/{{ attachment['id'] }}?preview=true" alt="{{ attachment['original_name'] }}" loading="lazy">
+                      </a>
+                    {% endif %}
+                    <div class="attachment-row">
+                      <a href="/attachments/{{ attachment['id'] }}">
+                        <span class="file-icon" aria-hidden="true">↧</span>
+                        <span>
+                          <strong>{{ attachment["original_name"] }}</strong>
+                          <small>{{ format_size(attachment["size"]) }}</small>
+                        </span>
+                      </a>
+                      {% if not detail.card["archived_at"] %}
+                        <form
+                          method="post"
+                          action="/attachments/{{ attachment['id'] }}/remove"
+                          hx-post="/attachments/{{ attachment['id'] }}/remove"
+                          hx-target="#card-drawer-container"
+                          hx-swap="innerHTML"
+                          hx-confirm="Remove this file?"
+                        >
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                          <button class="icon-button small" type="submit" aria-label="Remove {{ attachment['original_name'] }}">×</button>
+                        </form>
+                      {% endif %}
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </article>
+        {% else %}
+          <div class="thread-empty">No trail of messages yet. Add the useful bit below.</div>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+
+  {% if not detail.card["archived_at"] %}
+    <footer class="drawer-footer">
+      <form
+        class="entry-composer"
+        method="post"
+        action="/cards/{{ detail.card['id'] }}/entries"
+        enctype="multipart/form-data"
+        hx-post="/cards/{{ detail.card['id'] }}/entries"
+        hx-target="#card-drawer-container"
+        hx-swap="innerHTML"
+      >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <label class="sr-only" for="entry-body-{{ detail.card['id'] }}">Add a note</label>
+        <textarea id="entry-body-{{ detail.card['id'] }}" name="body" rows="2" maxlength="10000" placeholder="Add a note…"></textarea>
+        <div class="composer-actions">
+          <label class="file-picker">
+            <input type="file" name="files" multiple>
+            <span>＋ Photos or files</span>
+          </label>
+          <button class="button button-primary" type="submit">Add</button>
+        </div>
+        <div class="selected-files" aria-live="polite"></div>
+        <div id="entry-error"></div>
+      </form>
+      <form
+        class="archive-form"
+        method="post"
+        action="/cards/{{ detail.card['id'] }}/archive"
+        hx-post="/cards/{{ detail.card['id'] }}/archive"
+        hx-confirm="Archive this card? You can restore it later."
+      >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="button button-quiet danger" type="submit">Archive card</button>
+      </form>
+    </footer>
+  {% else %}
+    <footer class="drawer-footer archived-footer">
+      <a class="button button-secondary button-wide" href="/archive">Go to archive</a>
+    </footer>
+  {% endif %}
+</aside>

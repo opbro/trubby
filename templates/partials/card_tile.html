@@ -1,0 +1,39 @@
+<article class="card-tile" data-card-id="{{ card['id'] }}">
+  <a
+    class="card-link"
+    href="/cards/{{ card['id'] }}"
+    hx-get="/cards/{{ card['id'] }}"
+    hx-target="#card-drawer-container"
+    hx-swap="innerHTML"
+    hx-push-url="true"
+  >
+    <span class="drag-cue" aria-hidden="true">⋮⋮</span>
+    <h3>{{ card["title"] }}</h3>
+    {% if card["description"] %}
+      <p>{{ card["description"]|truncate(105) }}</p>
+    {% endif %}
+    {% if card["entry_count"] or card["attachment_count"] %}
+      <div class="card-meta">
+        {% if card["entry_count"] %}<span title="Notes">☵ {{ card["entry_count"] }}</span>{% endif %}
+        {% if card["attachment_count"] %}<span title="Files">⌕ {{ card["attachment_count"] }}</span>{% endif %}
+      </div>
+    {% endif %}
+  </a>
+  <form
+    class="move-form"
+    method="post"
+    action="/cards/{{ card['id'] }}/move"
+    hx-post="/cards/{{ card['id'] }}/move"
+    hx-target="#board-columns"
+    hx-swap="outerHTML"
+  >
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="view" value="board">
+    <label class="sr-only" for="move-{{ card['id'] }}">Move {{ card["title"] }}</label>
+    <select id="move-{{ card['id'] }}" name="status" onchange="this.form.requestSubmit()">
+      {% for option in ("todo", "doing", "done") %}
+        <option value="{{ option }}" {% if option == card["status"] %}selected{% endif %}>{{ status_labels[option] }}</option>
+      {% endfor %}
+    </select>
+  </form>
+</article>
