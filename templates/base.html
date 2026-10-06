@@ -5,18 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
   <title>{% block title %}Trubby{% endblock %}</title>
-  <link rel="icon" type="image/png" href="{{ url_for('static', path='trubby-icon.png') }}">
-  <link rel="apple-touch-icon" href="{{ url_for('static', path='trubby-icon.png') }}">
-  <link rel="stylesheet" href="{{ url_for('static', path='app.css') }}">
-  <script defer src="{{ url_for('static', path='vendor/htmx.min.js') }}"></script>
-  <script defer src="{{ url_for('static', path='vendor/sortable.min.js') }}"></script>
-  <script defer src="{{ url_for('static', path='app.js') }}"></script>
+  <link rel="icon" type="image/png" href="{{ url_for('static', path='trubby-icon.png').path }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', path='trubby-icon.png').path }}">
+  <link rel="stylesheet" href="{{ url_for('static', path='app.css').path }}">
+  <script defer src="{{ url_for('static', path='vendor/htmx.min.js').path }}"></script>
+  <script defer src="{{ url_for('static', path='vendor/sortable.min.js').path }}"></script>
+  <script defer src="{{ url_for('static', path='app.js').path }}"></script>
 </head>
 <body class="{% block body_class %}{% endblock %}">
   {% if current_user %}
     <header class="site-header">
       <a class="brand" href="/" aria-label="Trubby board">
-        <img class="brand-icon" src="{{ url_for('static', path='trubby-icon.png') }}" alt="">
+        <img class="brand-icon" src="{{ url_for('static', path='trubby-icon.png').path }}" alt="">
         <span>
           <strong>Trubby</strong>
           <small>Tracking for people who don’t want to track.</small>
