@@ -6,6 +6,7 @@ ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     TRUBBY_DATA_DIR=/data \
     TRUBBY_HOST=0.0.0.0 \
+    TRUBBY_FORWARDED_ALLOW_IPS=* \
     PORT=8000
 
 COPY pyproject.toml uv.lock ./

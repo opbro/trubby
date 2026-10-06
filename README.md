@@ -37,6 +37,7 @@ Open <http://127.0.0.1:8000>. The `trubby-data` Docker volume keeps the database
 | `TRUBBY_DATA_DIR` | `./data` | SQLite, uploads, and generated session secret |
 | `TRUBBY_SECRET` | generated | Optional fixed session-signing secret |
 | `TRUBBY_SECURE_COOKIE` | `false` | Set to `true` when serving behind HTTPS |
+| `TRUBBY_FORWARDED_ALLOW_IPS` | `127.0.0.1` (`*` in Docker) | Proxy IPs trusted for `X-Forwarded-Proto`/`-For`, so URLs use `https://` behind Traefik or another reverse proxy |
 
 Trubby assumes a trusted private network. Registration is open, every account can change every card, and there is no password recovery or admin role.
 

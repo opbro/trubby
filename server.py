@@ -748,8 +748,20 @@ def main() -> None:
     parser.add_argument("--host", default=os.environ.get("TRUBBY_HOST", "127.0.0.1"))
     parser.add_argument("--port", type=int, default=int(os.environ.get("PORT", "8000")))
     parser.add_argument("--reload", action="store_true")
+    parser.add_argument(
+        "--forwarded-allow-ips",
+        default=os.environ.get("TRUBBY_FORWARDED_ALLOW_IPS", "127.0.0.1"),
+        help="Comma-separated proxy IPs trusted for X-Forwarded-* headers, or '*'",
+    )
     args = parser.parse_args()
-    uvicorn.run("server:app", host=args.host, port=args.port, reload=args.reload)
+    uvicorn.run(
+        "server:app",
+        host=args.host,
+        port=args.port,
+        reload=args.reload,
+        proxy_headers=True,
+        forwarded_allow_ips=args.forwarded_allow_ips,
+    )
 
 
 if __name__ == "__main__":
