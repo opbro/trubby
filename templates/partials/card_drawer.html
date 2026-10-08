@@ -30,7 +30,10 @@
       {% else %}
         <p class="card-description empty-description">No extra explanation. Honestly refreshing.</p>
       {% endif %}
-      <p class="created-by">Started by {{ detail.card["creator_name"] }}</p>
+      <p class="created-by">
+        Started by {{ detail.card["creator_name"] }}
+        {%- if detail.card["updater_name"] %} · last updated by {{ detail.card["updater_name"] }}{% endif %}
+      </p>
     </section>
 
     {% if not detail.card["archived_at"] %}

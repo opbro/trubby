@@ -45,7 +45,7 @@ def register(client: TestClient, name: str = "Sam", password: str = "not-serious
         data={"csrf_token": token, "name": name, "password": password},
     )
     assert response.status_code == 200
-    assert "What’s going on?" in response.text
+    assert 'id="board-columns"' in response.text
 
 
 def create_card(client: TestClient, title: str) -> int:
@@ -88,7 +88,7 @@ def test_health_and_authentication_flow(client: TestClient):
         },
     )
     assert login.status_code == 200
-    assert "What’s going on?" in login.text
+    assert 'id="board-columns"' in login.text
 
 
 def test_registration_is_case_insensitively_unique(client: TestClient):
@@ -213,6 +213,27 @@ def test_drag_order_is_persisted(client: TestClient, data_dir: Path):
             ).fetchall()
         ]
     assert ids == [third, first, second]
+
+
+def test_cards_show_who_created_and_last_updated(client: TestClient):
+    register(client, "Sam")
+    card_id = create_card(client, "Shared chore")
+    board = client.get("/").text
+    assert "Created by Sam" in board
+    assert "Updated by" not in board
+
+    client.post("/logout", data={"csrf_token": current_csrf(client)})
+    register(client, "Riley")
+    moved = client.post(
+        f"/cards/{card_id}/move",
+        data={"csrf_token": current_csrf(client), "status": "doing", "view": "board"},
+        headers={"HX-Request": "true"},
+    )
+    assert "Created by Sam" in moved.text
+    assert "Updated by Riley" in moved.text
+
+    drawer = client.get(f"/cards/{card_id}", headers={"HX-Request": "true"})
+    assert "last updated by Riley" in drawer.text
 
 
 def test_upload_limit_rejects_and_cleans_partial_file(client: TestClient, data_dir: Path, monkeypatch):

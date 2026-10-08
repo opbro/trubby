@@ -131,6 +131,15 @@ def initialize_database(db_path: Path) -> None:
                 """
             )
 
+        if version < 2:
+            db.executescript(
+                """
+                ALTER TABLE cards ADD COLUMN updated_by INTEGER REFERENCES users(id);
+
+                PRAGMA user_version = 2;
+                """
+            )
+
 
 def create_app(data_dir: str | Path | None = None, *, testing: bool = False) -> FastAPI:
     resolved_data_dir = resolve_data_dir(data_dir)
@@ -232,10 +241,14 @@ def fetch_board_cards(db: sqlite3.Connection) -> dict[str, list[sqlite3.Row]]:
     rows = db.execute(
         """
         SELECT c.*,
+               creator.name AS creator_name,
+               updater.name AS updater_name,
                (SELECT COUNT(*) FROM entries e WHERE e.card_id = c.id) AS entry_count,
                (SELECT COUNT(*) FROM attachments a
                 JOIN entries e ON e.id = a.entry_id WHERE e.card_id = c.id) AS attachment_count
         FROM cards c
+        JOIN users creator ON creator.id = c.created_by
+        LEFT JOIN users updater ON updater.id = c.updated_by
         WHERE c.archived_at IS NULL
         ORDER BY c.status, c.position, c.id
         """
@@ -249,8 +262,10 @@ def fetch_board_cards(db: sqlite3.Connection) -> dict[str, list[sqlite3.Row]]:
 def fetch_card(db: sqlite3.Connection, card_id: int) -> dict[str, Any] | None:
     card = db.execute(
         """
-        SELECT c.*, u.name AS creator_name
-        FROM cards c JOIN users u ON u.id = c.created_by
+        SELECT c.*, u.name AS creator_name, updater.name AS updater_name
+        FROM cards c
+        JOIN users u ON u.id = c.created_by
+        LEFT JOIN users updater ON updater.id = c.updated_by
         WHERE c.id = ?
         """,
         (card_id,),
@@ -495,7 +510,7 @@ def register_routes(app: FastAPI) -> None:
         title: str = Form(...),
         description: str = Form(""),
     ) -> Response:
-        require_user(request)
+        user = require_user(request)
         await verify_csrf(request)
         title = title.strip()
         description = description.strip()
@@ -505,8 +520,8 @@ def register_routes(app: FastAPI) -> None:
             return form_error("Keep the description under 5,000 characters.", "#card-edit-error")
         with database(request) as db:
             cursor = db.execute(
-                "UPDATE cards SET title = ?, description = ?, updated_at = ? WHERE id = ?",
-                (title, description, utc_now(), card_id),
+                "UPDATE cards SET title = ?, description = ?, updated_at = ?, updated_by = ? WHERE id = ?",
+                (title, description, utc_now(), user["id"], card_id),
             )
             if cursor.rowcount == 0:
                 raise HTTPException(status_code=404)
@@ -520,7 +535,7 @@ def register_routes(app: FastAPI) -> None:
         position: int | None = Form(None),
         view: str = Form("board"),
     ) -> Response:
-        require_user(request)
+        user = require_user(request)
         await verify_csrf(request)
         if status not in STATUSES:
             raise HTTPException(status_code=422, detail="Unknown status")
@@ -546,7 +561,10 @@ def register_routes(app: FastAPI) -> None:
             target_position = len(target_ids) if position is None else max(0, min(position, len(target_ids)))
             target_ids.insert(target_position, card_id)
             now = utc_now()
-            db.execute("UPDATE cards SET status = ?, updated_at = ? WHERE id = ?", (status, now, card_id))
+            db.execute(
+                "UPDATE cards SET status = ?, updated_at = ?, updated_by = ? WHERE id = ?",
+                (status, now, user["id"], card_id),
+            )
             for index, target_id in enumerate(target_ids):
                 db.execute("UPDATE cards SET position = ? WHERE id = ?", (index, target_id))
             if old_status != status:
@@ -557,7 +575,7 @@ def register_routes(app: FastAPI) -> None:
 
     @app.post("/cards/{card_id}/archive")
     async def archive_card(request: Request, card_id: int) -> Response:
-        require_user(request)
+        user = require_user(request)
         await verify_csrf(request)
         with database(request) as db:
             card = db.execute(
@@ -567,8 +585,8 @@ def register_routes(app: FastAPI) -> None:
             if card is None:
                 raise HTTPException(status_code=404)
             db.execute(
-                "UPDATE cards SET archived_at = ?, updated_at = ? WHERE id = ?",
-                (utc_now(), utc_now(), card_id),
+                "UPDATE cards SET archived_at = ?, updated_at = ?, updated_by = ? WHERE id = ?",
+                (utc_now(), utc_now(), user["id"], card_id),
             )
             normalize_positions(db, card["status"])
         if is_htmx(request):
@@ -591,16 +609,16 @@ def register_routes(app: FastAPI) -> None:
 
     @app.post("/cards/{card_id}/restore")
     async def restore_card(request: Request, card_id: int) -> Response:
-        require_user(request)
+        user = require_user(request)
         await verify_csrf(request)
         with database(request) as db:
             cursor = db.execute(
                 """
                 UPDATE cards
-                SET archived_at = NULL, status = 'todo', position = ?, updated_at = ?
+                SET archived_at = NULL, status = 'todo', position = ?, updated_at = ?, updated_by = ?
                 WHERE id = ? AND archived_at IS NOT NULL
                 """,
-                (next_position(db, "todo"), utc_now(), card_id),
+                (next_position(db, "todo"), utc_now(), user["id"], card_id),
             )
             if cursor.rowcount == 0:
                 raise HTTPException(status_code=404)
@@ -673,7 +691,10 @@ def register_routes(app: FastAPI) -> None:
                             now,
                         ),
                     )
-                db.execute("UPDATE cards SET updated_at = ? WHERE id = ?", (now, card_id))
+                db.execute(
+                    "UPDATE cards SET updated_at = ?, updated_by = ? WHERE id = ?",
+                    (now, user["id"], card_id),
+                )
         except ValueError as exc:
             for path in created_paths:
                 path.unlink(missing_ok=True)
@@ -713,7 +734,7 @@ def register_routes(app: FastAPI) -> None:
 
     @app.post("/attachments/{attachment_id}/remove", response_class=HTMLResponse)
     async def remove_attachment(request: Request, attachment_id: int) -> Response:
-        require_user(request)
+        user = require_user(request)
         await verify_csrf(request)
         with database(request) as db:
             item = db.execute(
@@ -733,7 +754,10 @@ def register_routes(app: FastAPI) -> None:
             ).fetchone()[0]
             if remaining == 0 and not item["body"]:
                 db.execute("DELETE FROM entries WHERE id = ?", (item["entry_id"],))
-            db.execute("UPDATE cards SET updated_at = ? WHERE id = ?", (utc_now(), item["card_id"]))
+            db.execute(
+                "UPDATE cards SET updated_at = ?, updated_by = ? WHERE id = ?",
+                (utc_now(), user["id"], item["card_id"]),
+            )
             card_id = item["card_id"]
             stored_name = item["stored_name"]
         (request.app.state.upload_dir / stored_name).unlink(missing_ok=True)

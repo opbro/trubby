@@ -45,10 +45,12 @@
 
   function initializeSortables() {
     if (!window.Sortable) return;
-    document.querySelectorAll(".card-list").forEach(function (list) {
-      if (list.dataset.sortableReady === "true") return;
-      list.dataset.sortableReady = "true";
-      window.Sortable.create(list, {
+    // The whole column is the drop zone, so dropping on its header or the
+    // empty space below its cards still lands the card in that column.
+    document.querySelectorAll(".board-column").forEach(function (column) {
+      if (column.dataset.sortableReady === "true") return;
+      column.dataset.sortableReady = "true";
+      window.Sortable.create(column, {
         group: "trubby-board",
         animation: 150,
         draggable: ".card-tile",
@@ -85,6 +87,7 @@
     var status = event.to.dataset.status;
     var cardId = card.dataset.cardId;
     if (!board || !status || !cardId) return;
+    if (event.from === event.to && event.oldDraggableIndex === event.newDraggableIndex) return;
 
     try {
       var response = await fetch("/cards/" + cardId + "/move", {

@@ -18,6 +18,10 @@
         {% if card["attachment_count"] %}<span title="Files">⌕ {{ card["attachment_count"] }}</span>{% endif %}
       </div>
     {% endif %}
+    <div class="card-people">
+      <span>Created by {{ card["creator_name"] }}</span>
+      {% if card["updater_name"] %}<span>Updated by {{ card["updater_name"] }}</span>{% endif %}
+    </div>
   </a>
   <form
     class="move-form"
