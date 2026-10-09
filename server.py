@@ -787,21 +787,49 @@ app = create_app()
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run Trubby.")
     parser.add_argument("--host", default=os.environ.get("TRUBBY_HOST", "127.0.0.1"))
-    parser.add_argument("--port", type=int, default=int(os.environ.get("PORT", "8000")))
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=os.environ.get("PORT") or None,
+        help="Defaults to 443 when serving HTTPS, otherwise 8000",
+    )
     parser.add_argument("--reload", action="store_true")
     parser.add_argument(
         "--forwarded-allow-ips",
         default=os.environ.get("TRUBBY_FORWARDED_ALLOW_IPS", "127.0.0.1"),
         help="Comma-separated proxy IPs trusted for X-Forwarded-* headers, or '*'",
     )
+    parser.add_argument(
+        "--ssl-certfile",
+        default=os.environ.get("TRUBBY_SSL_CERTFILE") or None,
+        help="TLS certificate (.crt, PEM); serves HTTPS together with --ssl-keyfile",
+    )
+    parser.add_argument(
+        "--ssl-keyfile",
+        default=os.environ.get("TRUBBY_SSL_KEYFILE") or None,
+        help="Unencrypted TLS private key (.key, PEM)",
+    )
     args = parser.parse_args()
+
+    https = bool(args.ssl_certfile or args.ssl_keyfile)
+    if https:
+        if not (args.ssl_certfile and args.ssl_keyfile):
+            parser.error("--ssl-certfile and --ssl-keyfile must be set together")
+        for path in (args.ssl_certfile, args.ssl_keyfile):
+            if not Path(path).is_file():
+                parser.error(f"TLS file not found: {path}")
+        # uvicorn imports a fresh server module, so the session cookie setting travels by environment.
+        os.environ.setdefault("TRUBBY_SECURE_COOKIE", "true")
+
     uvicorn.run(
         "server:app",
         host=args.host,
-        port=args.port,
+        port=args.port if args.port is not None else (443 if https else 8000),
         reload=args.reload,
         proxy_headers=True,
         forwarded_allow_ips=args.forwarded_allow_ips,
+        ssl_certfile=args.ssl_certfile,
+        ssl_keyfile=args.ssl_keyfile,
     )
 
 

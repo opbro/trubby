@@ -3,12 +3,16 @@ services:
     build: .
     ports:
       - "${PORT:-8000}:8000"
+      # HTTPS: uncomment this port and the TLS lines below, and put trubby.crt/trubby.key in ./certs
+      # - "443:443"
     environment:
       TRUBBY_DATA_DIR: /data
       TRUBBY_HOST: 0.0.0.0
-      PORT: 8000
+      # TRUBBY_SSL_CERTFILE: /certs/trubby.crt
+      # TRUBBY_SSL_KEYFILE: /certs/trubby.key
     volumes:
       - trubby-data:/data
+      # - ./certs:/certs:ro
     restart: unless-stopped
 
 volumes:

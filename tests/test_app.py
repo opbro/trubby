@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import sqlite3
 from pathlib import Path
@@ -321,3 +322,37 @@ def test_archive_all_done_cards(client: TestClient):
     assert "Finished one" in archive_page
     assert "Finished two" in archive_page
     assert "Still going" not in archive_page
+
+
+def test_tls_files_serve_https_on_443_with_secure_cookies(tmp_path: Path, monkeypatch):
+    cert = tmp_path / "trubby.crt"
+    key = tmp_path / "trubby.key"
+    cert.write_text("certificate", encoding="utf-8")
+    key.write_text("private key", encoding="utf-8")
+    calls = []
+    monkeypatch.setattr(server.uvicorn, "run", lambda app, **options: calls.append(options))
+    monkeypatch.delenv("PORT", raising=False)
+    # main() sets this for the app uvicorn imports; setenv first so it is removed afterwards.
+    monkeypatch.setenv("TRUBBY_SECURE_COOKIE", "")
+    monkeypatch.delenv("TRUBBY_SECURE_COOKIE")
+    monkeypatch.setattr(
+        "sys.argv", ["server.py", "--ssl-certfile", str(cert), "--ssl-keyfile", str(key)]
+    )
+
+    server.main()
+
+    assert calls[0]["port"] == 443
+    assert calls[0]["ssl_certfile"] == str(cert)
+    assert calls[0]["ssl_keyfile"] == str(key)
+    assert os.environ["TRUBBY_SECURE_COOKIE"] == "true"
+
+
+def test_tls_requires_both_certificate_and_key(tmp_path: Path, monkeypatch):
+    cert = tmp_path / "trubby.crt"
+    cert.write_text("certificate", encoding="utf-8")
+    monkeypatch.setattr(server.uvicorn, "run", lambda app, **options: pytest.fail("server started"))
+    monkeypatch.delenv("TRUBBY_SSL_KEYFILE", raising=False)
+    monkeypatch.setattr("sys.argv", ["server.py", "--ssl-certfile", str(cert)])
+
+    with pytest.raises(SystemExit):
+        server.main()

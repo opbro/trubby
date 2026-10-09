@@ -8,3 +8,6 @@ tests
 *.pyc
 .DS_Store
 
+*.crt
+*.key
+*.pem
