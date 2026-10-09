@@ -285,3 +285,39 @@ def test_interaction_assets_include_modal_lightbox_and_drag_fallback(client: Tes
     assert stylesheet.status_code == 200
     assert "transform: translate(-50%, -50%)" in stylesheet.text
     assert ".image-lightbox" in stylesheet.text
+
+
+def test_archive_all_done_cards(client: TestClient):
+    register(client)
+    finished = create_card(client, "Finished one")
+    also_finished = create_card(client, "Finished two")
+    create_card(client, "Still going")
+    assert "/cards/archive-done" not in client.get("/").text
+
+    for card_id in (finished, also_finished):
+        client.post(
+            f"/cards/{card_id}/move",
+            data={"csrf_token": current_csrf(client), "status": "done", "view": "board"},
+            headers={"HX-Request": "true"},
+        )
+    board = client.get("/").text
+    assert 'action="/cards/archive-done"' in board
+    assert "Archive 2 done cards?" in board
+    assert 'type="radio" name="status" value="done" checked' in board
+
+    response = client.post(
+        "/cards/archive-done",
+        data={"csrf_token": csrf_from(client.get("/"))},
+        headers={"HX-Request": "true"},
+    )
+    assert response.status_code == 200
+    assert 'id="board-columns"' in response.text
+    assert "Finished one" not in response.text
+    assert "Finished two" not in response.text
+    assert "Still going" in response.text
+    assert "/cards/archive-done" not in response.text
+
+    archive_page = client.get("/archive").text
+    assert "Finished one" in archive_page
+    assert "Finished two" in archive_page
+    assert "Still going" not in archive_page

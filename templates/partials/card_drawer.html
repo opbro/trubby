@@ -71,14 +71,10 @@
       >
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <input type="hidden" name="view" value="drawer">
-        <label>
-          Where is it?
-          <select name="status" onchange="this.form.requestSubmit()">
-            {% for status in ("todo", "doing", "done") %}
-              <option value="{{ status }}" {% if status == detail.card["status"] %}selected{% endif %}>{{ status_labels[status] }}</option>
-            {% endfor %}
-          </select>
-        </label>
+        <span aria-hidden="true">Where is it?</span>
+        {% with current_status=detail.card["status"], toggle_label="Where is it?" %}
+          {% include "partials/status_toggle.html" %}
+        {% endwith %}
       </form>
     {% endif %}
 

@@ -593,6 +593,23 @@ def register_routes(app: FastAPI) -> None:
             return Response(status_code=200, headers={"HX-Redirect": "/"})
         return RedirectResponse("/", status_code=303)
 
+    @app.post("/cards/archive-done", response_class=HTMLResponse)
+    async def archive_done_cards(request: Request) -> Response:
+        user = require_user(request)
+        await verify_csrf(request)
+        now = utc_now()
+        with database(request) as db:
+            db.execute(
+                """
+                UPDATE cards SET archived_at = ?, updated_at = ?, updated_by = ?
+                WHERE status = 'done' AND archived_at IS NULL
+                """,
+                (now, now, user["id"]),
+            )
+        if is_htmx(request):
+            return board_columns_response(request)
+        return RedirectResponse("/", status_code=303)
+
     @app.get("/archive", response_class=HTMLResponse)
     async def archive(request: Request) -> HTMLResponse:
         require_user(request)

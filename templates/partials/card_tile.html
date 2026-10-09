@@ -33,11 +33,8 @@
   >
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <input type="hidden" name="view" value="board">
-    <label class="sr-only" for="move-{{ card['id'] }}">Move {{ card["title"] }}</label>
-    <select id="move-{{ card['id'] }}" name="status" onchange="this.form.requestSubmit()">
-      {% for option in ("todo", "doing", "done") %}
-        <option value="{{ option }}" {% if option == card["status"] %}selected{% endif %}>{{ status_labels[option] }}</option>
-      {% endfor %}
-    </select>
+    {% with current_status=card["status"], toggle_label="Move " ~ card["title"] %}
+      {% include "partials/status_toggle.html" %}
+    {% endwith %}
   </form>
 </article>

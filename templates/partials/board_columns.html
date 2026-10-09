@@ -6,7 +6,22 @@
           <span class="status-dot" aria-hidden="true"></span>
           <h2 id="heading-{{ status }}">{{ status_labels[status] }}</h2>
         </div>
-        <span class="card-count" aria-label="{{ cards[status]|length }} cards">{{ cards[status]|length }}</span>
+        <div class="column-actions">
+          {% if status == "done" and cards[status] %}
+            <form
+              method="post"
+              action="/cards/archive-done"
+              hx-post="/cards/archive-done"
+              hx-target="#board-columns"
+              hx-swap="outerHTML"
+              hx-confirm="Archive {{ cards[status]|length }} done card{{ 's' if cards[status]|length != 1 }}? You can restore from the archive later."
+            >
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button class="column-archive" type="submit">Archive all</button>
+            </form>
+          {% endif %}
+          <span class="card-count" aria-label="{{ cards[status]|length }} cards">{{ cards[status]|length }}</span>
+        </div>
       </header>
       {% for card in cards[status] %}
         {% include "partials/card_tile.html" %}

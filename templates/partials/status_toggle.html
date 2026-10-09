@@ -1,0 +1,8 @@
+<div class="status-toggle" role="radiogroup" aria-label="{{ toggle_label }}">
+  {% for option in ("todo", "doing", "done") %}
+    <label class="status-option status-option-{{ option }}">
+      <input type="radio" name="status" value="{{ option }}" {% if option == current_status %}checked{% endif %} onchange="this.form.requestSubmit()">
+      <span>{{ status_labels[option] }}</span>
+    </label>
+  {% endfor %}
+</div>
