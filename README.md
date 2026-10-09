@@ -4,6 +4,13 @@
 
 Trubby is one shared, intentionally uncomplicated board for a small team. Cards move through To do, Doing, and Done. Open one to keep its notes, photos, and files together—without labels, sprints, points, workflows, or project-manager cosplay.
 
+![The Trubby board with To do, Doing, and Done columns](docs/board.png)
+
+<p>
+  <img src="docs/card.png" alt="An open card with its status toggle, notes, and file uploads" width="49%">
+  <img src="docs/login.png" alt="The Trubby login page" width="49%">
+</p>
+
 ## Run it locally
 
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then:
